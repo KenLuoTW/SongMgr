@@ -1213,7 +1213,7 @@ namespace CrazyKTV_SongMgr
             {
                 Global.TimerStartTime = DateTime.Now;
                 Global.TotalList = new List<int>() { 0, 0, 0, 0 };
-                Cashbox_QueryStatus_Label.Text = "正在解析錢櫃歌曲編號,請稍待...";
+                Cashbox_QueryStatus_Label.Text = "正在套用錢櫃歌曲編號,請稍待...";
 
                 Common_SwitchSetUI(false);
                 Cashbox.CreateSongDataTable();
@@ -1228,7 +1228,7 @@ namespace CrazyKTV_SongMgr
                     Global.TimerEndTime = DateTime.Now;
                     this.BeginInvoke((Action)delegate()
                     {
-                        Cashbox_QueryStatus_Label.Text = "總共變更 " + Global.TotalList[0] + " 首歌曲為錢櫃編號,失敗 " + Global.TotalList[1] + " 首,共花費 " + (long)(Global.TimerEndTime - Global.TimerStartTime).TotalSeconds + " 秒完成。";
+                        Cashbox_QueryStatus_Label.Text = "總共套用 " + Global.TotalList[1] + " 首歌曲的錢櫃編號,失敗 " + Global.TotalList[2] + " 首,共花費 " + (long)(Global.TimerEndTime - Global.TimerStartTime).TotalSeconds + " 秒完成。";
                         Common_SwitchSetUI(true);
                     });
                     Cashbox.DisposeSongDataTable();
@@ -1242,55 +1242,8 @@ namespace CrazyKTV_SongMgr
 
             if (Global.CrazyktvDatabaseStatus)
             {
-                List<string> FavoriteList = new List<string>();
-
-                string SongQuerySqlStr = "select User_Id, User_Name from ktv_User";
-                using (DataTable dt = CommonFunc.GetOleDbDataTable(Global.CrazyktvDatabaseFile, SongQuerySqlStr, ""))
-                {
-                    if (dt.Rows.Count > 0)
-                    {
-                        foreach (DataRow row in dt.AsEnumerable())
-                        {
-                            FavoriteList.Add("ktv_User|" + row["User_Id"].ToString() + "|" + row["User_Name"].ToString());
-                        }
-                    }
-                }
-
-                SongQuerySqlStr = "select User_Id, Song_Id from ktv_Favorite";
-                using (DataTable dt = CommonFunc.GetOleDbDataTable(Global.CrazyktvDatabaseFile, SongQuerySqlStr, ""))
-                {
-                    if (dt.Rows.Count > 0)
-                    {
-                        foreach (DataRow row in dt.AsEnumerable())
-                        {
-                            if (Cashbox.SongIdList.IndexOf(row["Song_Id"].ToString()) >= 0)
-                            {
-                                int i = Cashbox.SongIdList.IndexOf(row["Song_Id"].ToString());
-                                List<string> list = new List<string>(Regex.Split(Cashbox.SongDataList[i], @"\|", RegexOptions.None));
-
-                                FavoriteList.Add("ktv_Favorite|" + row["User_Id"].ToString() + "|" + list[0] + "|" + list[1] + "|" + list[2]);
-                            }
-                        }
-                    }
-                }
-
-                if (!Directory.Exists(Application.StartupPath + @"\SongMgr\Backup")) Directory.CreateDirectory(Application.StartupPath + @"\SongMgr\Backup");
-                StreamWriter sw = new StreamWriter(Application.StartupPath + @"\SongMgr\Backup\Favorite.txt");
-                foreach (string str in FavoriteList)
-                {
-                    sw.WriteLine(str);
-                }
-                sw.Close();
-                FavoriteList.Clear();
-
-                List<string> ReNewList = new List<string>();
-                List<string> ReOldList = new List<string>();
-
-                string MaxDigitCode = (Global.SongMgrMaxDigitCode == "1") ? "D5" : "D6";
-                CommonFunc.GetMaxSongId((Global.SongMgrMaxDigitCode == "1") ? 5 : 6);
-                CommonFunc.GetUnusedSongId((Global.SongMgrMaxDigitCode == "1") ? 5 : 6);
-
-                string SqlStr = "select Cashbox_Id, Song_Lang, Song_Singer, Song_SongName, Song_CreatDate from ktv_Cashbox";
+                List<string> UpdateList = new List<string>();
+                string SqlStr = "select Cashbox_Id, Song_Lang, Song_Singer, Song_SongName, Song_CreatDate, Song_HaveSong from ktv_Cashbox";
                 using (DataTable CashboxDT = CommonFunc.GetOleDbDataTable(Global.CrazyktvSongMgrDatabaseFile, SqlStr, ""))
                 {
                     Parallel.ForEach(Global.CashboxSongLangList, (langstr, loopState) =>
@@ -1303,183 +1256,69 @@ namespace CrazyKTV_SongMgr
                         {
                             foreach (DataRow row in query)
                             {
-                                string CashboxId = Convert.ToInt32(row["Cashbox_Id"].ToString()).ToString(MaxDigitCode);
                                 int SongDataIndex = CommonFunc.MatchCashboxSong("CashboxSong", row, "", "", "", Cashbox.SongDataLowCaseList, Cashbox.SongDataFuzzyList);
 
                                 if (SongDataIndex >= 0)
                                 {
-                                    lock (LockThis) { Global.TotalList[2]++; }
+                                    string SongId = Cashbox.SongIdList[SongDataIndex];
+                                    string CashboxId = row["Cashbox_Id"].ToString();
 
-                                    if (CashboxId != Cashbox.SongIdList[SongDataIndex])
+                                    lock (LockThis)
                                     {
-                                        List<string> list = new List<string>(Cashbox.SongDataList[SongDataIndex].Split('|'));
-                                        if (Cashbox.SongIdList.IndexOf(CashboxId) >= 0)
-                                        {
-                                            lock (LockThis) { ReOldList.Add(CashboxId + "|" + Cashbox.SongIdList[SongDataIndex] + "|" + list[0] + "|" + list[1] + "|" + list[2]); }
-                                        }
-                                        else
-                                        {
-                                            lock (LockThis) { ReNewList.Add(CashboxId + "|" + Cashbox.SongIdList[SongDataIndex] + "|" + list[0] + "|" + list[1] + "|" + list[2]); }
-                                        }
-                                        list.Clear();
+                                        Global.TotalList[0]++;
+                                        UpdateList.Add(string.Format("{0}|{1}", SongId, CashboxId));
                                     }
 
-                                    this.BeginInvoke((Action)delegate()
+                                    this.BeginInvoke((Action)delegate ()
                                     {
-                                        Cashbox_QueryStatus_Label.Text = "已在歌庫找到 " + Global.TotalList[2] + " 首錢櫃歌曲...";
+                                        Cashbox_QueryStatus_Label.Text = "已在歌庫找到 " + Global.TotalList[0] + " 首錢櫃歌曲...";
                                     });
                                 }
                             }
                         }
                     });
                 }
-                ReOldList.Sort();
-                ReNewList.Sort();
 
-                using (OleDbConnection conn = CommonFunc.OleDbOpenConn(Global.CrazyktvDatabaseFile, ""))
+                if (UpdateList.Count > 0)
                 {
-                    OleDbCommand cmd = new OleDbCommand();
-                    string UpdateSqlStr = "update ktv_Song set Song_Id = @SongId where Song_Id = @OldSongId";
-                    cmd = new OleDbCommand(UpdateSqlStr, conn);
-
-                    List<string> valuelist;
-                    foreach (string str in ReOldList)
+                    using (OleDbConnection conn = CommonFunc.OleDbOpenConn(Global.CrazyktvDatabaseFile, ""))
                     {
-                        valuelist = new List<string>(str.Split('|'));
-                        string NextSongId = Cashbox.GetNextSongId(valuelist[2]);
-                        try
+                        string sqlStr = "update ktv_Song set Song_CashboxId = @SongCashboxId where Song_Id = @SongId";
+
+                        foreach (string str in UpdateList)
                         {
-                            cmd.Parameters.AddWithValue("@SongId", NextSongId);
-                            cmd.Parameters.AddWithValue("@OldSongId", valuelist[0]);
-                            cmd.ExecuteNonQuery();
-                            cmd.Parameters.Clear();
+                            List<string> list = new List<string>(str.Split('|'));
 
-                            cmd.Parameters.AddWithValue("@SongId", valuelist[0]);
-                            cmd.Parameters.AddWithValue("@OldSongId", valuelist[1]);
-                            cmd.ExecuteNonQuery();
-                            cmd.Parameters.Clear();
+                            using (OleDbCommand cmd = new OleDbCommand(sqlStr, conn))
+                            {
+                                cmd.Parameters.AddWithValue("@SongCashboxId", list[1]);
+                                cmd.Parameters.AddWithValue("@SongId", list[0]);
 
-                            Global.TotalList[0]++;
-                            Global.SongLogDT.Rows.Add(Global.SongLogDT.NewRow());
-                            Global.SongLogDT.Rows[Global.SongLogDT.Rows.Count - 1][0] = "已成功套用編號: " + valuelist[0] + " => " + NextSongId + " 及 " + valuelist[1] + " => " + valuelist[0] + " (" + valuelist[2] + "-" + valuelist[3] + "-" + valuelist[4] + ")";
-                            Global.SongLogDT.Rows[Global.SongLogDT.Rows.Count - 1][1] = Global.SongLogDT.Rows.Count;
-                        }
-                        catch
-                        {
-                            Global.TotalList[1]++;
-                            Global.SongLogDT.Rows.Add(Global.SongLogDT.NewRow());
-                            Global.SongLogDT.Rows[Global.SongLogDT.Rows.Count - 1][0] = "分配編號時發生未知的錯誤: " + valuelist[0] + " => " + NextSongId + " 及 " + valuelist[1] + " => " + valuelist[0] + " (" + valuelist[2] + "-" + valuelist[3] + "-" + valuelist[4] + ")";
-                            Global.SongLogDT.Rows[Global.SongLogDT.Rows.Count - 1][1] = Global.SongLogDT.Rows.Count;
-                        }
-                        finally
-                        {
-                            cmd.Parameters.Clear();
-                        }
-
-                        this.BeginInvoke((Action)delegate()
-                        {
-                            Cashbox_QueryStatus_Label.Text = "已成功將 " + Global.TotalList[0] + " 首歌曲變更為錢櫃編號,失敗 " + Global.TotalList[1] + " 首...";
-                        });
-                        valuelist.Clear();
-                    }
-                    ReOldList.Clear();
-
-                    foreach (string str in ReNewList)
-                    {
-                        valuelist = new List<string>(str.Split('|'));
-
-                        cmd.Parameters.AddWithValue("@SongId", valuelist[0]);
-                        cmd.Parameters.AddWithValue("@OldSongId", valuelist[1]);
-
-                        try
-                        {
-                            cmd.ExecuteNonQuery();
-                            Global.TotalList[0]++;
-                            Global.SongLogDT.Rows.Add(Global.SongLogDT.NewRow());
-                            Global.SongLogDT.Rows[Global.SongLogDT.Rows.Count - 1][0] = "已成功套用編號: " + valuelist[1] + " => " + valuelist[0] + " (" + valuelist[2] + "-" + valuelist[3] + "-" + valuelist[4] + ")";
-                            Global.SongLogDT.Rows[Global.SongLogDT.Rows.Count - 1][1] = Global.SongLogDT.Rows.Count;
-                        }
-                        catch
-                        {
-                            Global.TotalList[1]++;
-                            Global.SongLogDT.Rows.Add(Global.SongLogDT.NewRow());
-                            Global.SongLogDT.Rows[Global.SongLogDT.Rows.Count - 1][0] = "分配編號時發生未知的錯誤: " + valuelist[1] + " => " + valuelist[0] + " (" + valuelist[2] + "-" + valuelist[3] + "-" + valuelist[4] + ")";
-                            Global.SongLogDT.Rows[Global.SongLogDT.Rows.Count - 1][1] = Global.SongLogDT.Rows.Count;
-                        }
-                        cmd.Parameters.Clear();
-
-                        this.BeginInvoke((Action)delegate()
-                        {
-                            Cashbox_QueryStatus_Label.Text = "已成功將 " + Global.TotalList[0] + " 首歌曲變更錢櫃編號,失敗 " + Global.TotalList[1] + " 首...";
-                        });
-                        valuelist.Clear();
-                    }
-                    ReNewList.Clear();
-                }
-
-                using (OleDbConnection conn = CommonFunc.OleDbOpenConn(Global.CrazyktvDatabaseFile, ""))
-                {
-                    OleDbCommand Ucmd = new OleDbCommand();
-                    OleDbCommand Fcmd = new OleDbCommand();
-
-                    string TruncateSqlStr = "";
-
-                    TruncateSqlStr = "delete * from ktv_User";
-                    Ucmd = new OleDbCommand(TruncateSqlStr, conn);
-                    Ucmd.ExecuteNonQuery();
-
-                    TruncateSqlStr = "delete * from ktv_Favorite";
-                    Fcmd = new OleDbCommand(TruncateSqlStr, conn);
-                    Fcmd.ExecuteNonQuery();
-
-                    List<string> Addlist = new List<string>();
-                    StreamReader sr = new StreamReader(Application.StartupPath + @"\SongMgr\Backup\Favorite.txt", Encoding.UTF8);
-                    while (!sr.EndOfStream)
-                    {
-                        Addlist.Add(sr.ReadLine());
-                    }
-                    sr.Close();
-
-                    string UserColumnStr = "User_Id, User_Name";
-                    string UserValuesStr = "@UserId, @UserName";
-                    string UserAddSqlStr = "insert into ktv_User ( " + UserColumnStr + " ) values ( " + UserValuesStr + " )";
-                    Ucmd = new OleDbCommand(UserAddSqlStr, conn);
-
-                    string FavoriteColumnStr = "User_Id, Song_Id";
-                    string FavoriteValuesStr = "@UserId, @SongId";
-                    string FavoriteAddSqlStr = "insert into ktv_Favorite ( " + FavoriteColumnStr + " ) values ( " + FavoriteValuesStr + " )";
-                    Fcmd = new OleDbCommand(FavoriteAddSqlStr, conn);
-
-                    List<string> list = new List<string>();
-                    foreach (string AddStr in Addlist)
-                    {
-                        list = new List<string>(Regex.Split(AddStr, @"\|", RegexOptions.None));
-                        switch (list[0])
-                        {
-                            case "ktv_User":
-                                Ucmd.Parameters.AddWithValue("@UserId", list[1]);
-                                Ucmd.Parameters.AddWithValue("@UserName", list[2]);
-                                Ucmd.ExecuteNonQuery();
-                                Ucmd.Parameters.Clear();
-                                break;
-                            case "ktv_Favorite":
-                                string SongData = list[2] + "|" + list[3].ToLower() + "|" + list[4].ToLower();
-
-                                if (Cashbox.SongDataLowCaseList.IndexOf(SongData) > 0)
+                                try
                                 {
-                                    string SongId = Cashbox.SongIdList[Cashbox.SongDataLowCaseList.IndexOf(SongData)];
-                                    Fcmd.Parameters.AddWithValue("@UserId", list[1]);
-                                    Fcmd.Parameters.AddWithValue("@SongId", SongId);
-                                    Fcmd.ExecuteNonQuery();
-                                    Fcmd.Parameters.Clear();
+                                    cmd.ExecuteNonQuery();
+                                    Global.TotalList[1]++;
                                 }
-                                break;
+                                catch
+                                {
+                                    Global.TotalList[2]++;
+                                }
+                                this.BeginInvoke((Action)delegate ()
+                                {
+                                    Cashbox_QueryStatus_Label.Text = "正在套用第 " + Global.TotalList[1] + " 首歌曲的錢櫃編號,失敗 " + Global.TotalList[2] + " 首";
+                                    Common_SwitchSetUI(true);
+                                });
+                            }
+                            list.Clear();
+                            list = null;
                         }
-                        list.Clear();
+                        UpdateList.Clear();
+                        UpdateList = null;
                     }
-                    Addlist.Clear();
                 }
+
             }
+        
         }
 
         #endregion
