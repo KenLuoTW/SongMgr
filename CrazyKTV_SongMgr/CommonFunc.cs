@@ -476,9 +476,12 @@ namespace CrazyKTV_SongMgr
 
                 this.BeginInvoke((Action)delegate()
                 {
-                    SongQuery_QueryStatus_Label.Text = "正在等待資料初始化完成,請稍待...";
-                    SongAdd_Tooltip_Label.Text = SongQuery_QueryStatus_Label.Text;
-                    SongMgrCfg_Tooltip_Label.Text = SongQuery_QueryStatus_Label.Text;
+                    if (Global.CrazyktvDatabaseStatus)
+                    {
+                        SongQuery_QueryStatus_Label.Text = "正在等待資料初始化完成,請稍待...";
+                        SongAdd_Tooltip_Label.Text = SongQuery_QueryStatus_Label.Text;
+                        SongMgrCfg_Tooltip_Label.Text = SongQuery_QueryStatus_Label.Text;
+                    }
                 });
 
                 var tasks = new List<Task>();
@@ -727,10 +730,13 @@ namespace CrazyKTV_SongMgr
                 Global.InitializeSongData = true;
                 this.BeginInvoke((Action)delegate()
                 {
-                    SongQuery_QueryStatus_Label.Text = "資料初始化已完成。";
-                    SongAdd_Tooltip_Label.Text = SongQuery_QueryStatus_Label.Text;
-                    SongMgrCfg_Tooltip_Label.Text = SongQuery_QueryStatus_Label.Text;
-                    Common_SwitchDBVerErrorUI(Global.SongMgrDBVerErrorUIStatus);
+                    if (Global.CrazyktvDatabaseStatus)
+                    {
+                        SongQuery_QueryStatus_Label.Text = "資料初始化已完成。";
+                        SongAdd_Tooltip_Label.Text = SongQuery_QueryStatus_Label.Text;
+                        SongMgrCfg_Tooltip_Label.Text = SongQuery_QueryStatus_Label.Text;
+                        Common_SwitchDBVerErrorUI(Global.SongMgrDBVerErrorUIStatus);
+                    }
                 });
             }
         }
@@ -2015,6 +2021,32 @@ namespace CrazyKTV_SongMgr
                 System.Runtime.InteropServices.Marshal.ReleaseComObject(objJRO);
                 objJRO = null;
             }
+        }
+
+        #endregion
+
+        #region --- CommonFunc 取得資料表欄位 ---
+
+        public static List<string> GetDBColumnList(string Database, string TableName, string Password = null)
+        {
+            List<string> list = new List<string>();
+
+            using (OleDbConnection conn = OleDbOpenConn(Database, Password))
+            {
+                String[] Restrictions = new String[4];
+                Restrictions[2] = TableName;
+                using (DataTable dt = conn.GetSchema("Columns", Restrictions))
+                {
+                    if (dt.Rows.Count > 0)
+                    {
+                        foreach (DataRow row in dt.AsEnumerable())
+                        {
+                            list.Add(row["COLUMN_NAME"].ToString());
+                        }
+                    }
+                }
+            }
+            return list;
         }
 
         #endregion

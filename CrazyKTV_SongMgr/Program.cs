@@ -41,10 +41,7 @@ namespace CrazyKTV_SongMgr
         public static string CrazyktvDatabaseFile = Application.StartupPath + @"\CrazySong.mdb";
         public static string CrazyktvSongMgrDatabaseFile = Application.StartupPath + @"\SongMgr\CrazySongMgr.mdb";
         public static string CrazyktvSongDBVer = "1.00";
-        public static string CrazyktvSongDBUpdateFile = Application.StartupPath + @"\SongMgr\Update\UpdateDB.xml";
-        public static string CrazyktvCfgFile = Application.StartupPath + @"\CrazyKTV.cfg";
         public static bool CrazyktvDatabaseStatus = false;
-        public static bool CrazyktvDatabaseIsOld = false;
         public static bool CrazyktvDatabaseError = false;
         public static bool CrazyktvDatabaseMaxDigitCode = true;
         public static bool SongMgrDatabaseError = false;
@@ -96,7 +93,7 @@ namespace CrazyKTV_SongMgr
         public static string MainCfgHideSongDBConverterTabPage = "False";
         public static string MainCfgHideSongAddResultTabPage = "True";
         public static string MainCfgHideSongLogTabPage = "True";
-        public static string MainCfgHideApplyCashboxIdButton = "True";
+        public static string MainCfgHideApplyCashboxIdButton = "False";
         public static string MainCfgBackupRemoveSongDays = "7";
         public static string MainCfgUIScale = "3";
         public static string MainCfgUICustomScale = "100";
@@ -126,6 +123,15 @@ namespace CrazyKTV_SongMgr
         public static List<string> CrazyktvSongTrackList = new List<string>() { "V0", "VR", "VL", "V3", "V4", "V5" };
         public static List<string> CrazyktvSongTrackWordList = new List<string>() { "立體聲", "右聲道 / 音軌1", "左聲道 / 音軌2", "音軌3", "音軌4", "音軌5" };
         public static List<string> CrazyktvSongTrackKeyWordList = new List<string>() { "v0,立體", "vr,r,右", "vl,l,左", "v3", "v4", "v5" };
+
+        public static List<string> CrazyktvDBTableList = new List<string>() { "ktv_Favorite", "ktv_Langauage", "ktv_Phonetics", "ktv_Remote", "ktv_Singer", "ktv_SingerName", "ktv_Song", "ktv_Swan", "ktv_User", "ktv_Words" };
+        public static List<string> SongMgrDBTableList = new List<string>() { "ktv_AllSinger", "ktv_Cashbox", "ktv_Phonetics", "ktv_SongMgr", "ktv_Version" };
+        public static List<string> ktvSongColumnsList = new List<string>()
+        {
+            "Song_Id", "Song_Path", "Song_SongName", "Song_Singer", "Song_Spell", "Song_WordCount", "Song_Volume",
+            "Song_Track", "Song_Lang", "Song_FileName", "Song_PlayCount", "Song_PlayState", "Song_CreatDate", "Song_SingerType",
+            "Song_SpellNum", "Song_SongType", "Song_SongStroke", "Song_MB", "Song_PenStyle", "Song_ReplayGain", "Song_CashboxId"
+        };
 
         public static List<string> SingerList = new List<string>();
         public static List<string> SingerLowCaseList = new List<string>();

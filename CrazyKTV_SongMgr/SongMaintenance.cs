@@ -3579,34 +3579,6 @@ namespace CrazyKTV_SongMgr
         private void SongMaintenance_SongLangUpdateTask()
         {
             Thread.CurrentThread.Priority = ThreadPriority.Lowest;
-            List<string> list = new List<string>();
-
-            if (File.Exists(Application.StartupPath + @"\SongMgr\Custom.lang"))
-            {
-                if (!Directory.Exists(Application.StartupPath + @"\Lang")) Directory.CreateDirectory(Application.StartupPath + @"\Lang");
-                File.Copy(Application.StartupPath + @"\SongMgr\Custom.lang", Application.StartupPath + @"\Lang\Custom.lang", true);
-
-                if (File.Exists(Application.StartupPath + @"\Lang\Custom.lang"))
-                {
-                    StreamReader sr = new StreamReader(Application.StartupPath + @"\Lang\Custom.lang", Encoding.Unicode);
-                    while (!sr.EndOfStream)
-                    {
-                        list.Add(sr.ReadLine());
-                    }
-                    sr.Close();
-
-                    list[2] = string.Join(",", Global.CrazyktvSongLangList);
-
-                    StreamWriter sw = new StreamWriter(Application.StartupPath + @"\Lang\Custom.lang", false, Encoding.Unicode);
-                    foreach (string str in list)
-                    {
-                        sw.WriteLine(str);
-                    }
-                    sw.Close();
-
-                    CommonFunc.SaveConfigXmlFile(Global.CrazyktvCfgFile, "Language", "Custom");
-                }
-            }
 
             OleDbConnection conn = CommonFunc.OleDbOpenConn(Global.CrazyktvDatabaseFile, "");
             string sqlColumnStr = "Langauage_Name = @LangauageName, Langauage_KeyWord = @LangauageKeyWord";

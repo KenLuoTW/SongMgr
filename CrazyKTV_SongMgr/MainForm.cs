@@ -87,20 +87,6 @@ namespace CrazyKTV_SongMgr
                 }
             }
 
-            // 歌庫版本資訊
-            if (!File.Exists(Global.CrazyktvSongDBUpdateFile))
-            {
-                if (!Directory.Exists(Application.StartupPath + @"\SongMgr\Update")) Directory.CreateDirectory(Application.StartupPath + @"\SongMgr\Update");
-                CommonFunc.CreateConfigXmlFile(Global.CrazyktvSongDBUpdateFile);
-                CommonFunc.SaveConfigXmlFile(Global.CrazyktvSongDBUpdateFile, "SongDBVer", Global.CrazyktvSongDBVer);
-            }
-
-            // CrazyKTV 設定
-            if (!File.Exists(Global.CrazyktvCfgFile))
-            {
-                CommonFunc.CreateConfigXmlFile(Global.CrazyktvCfgFile);
-            }
-
             // 載入歌庫設定
             if (!File.Exists(Global.SongMgrCfgFile))
             {
@@ -514,11 +500,10 @@ namespace CrazyKTV_SongMgr
             // 檢查程式更新
             Common_CheckSongMgrVer();
 
-            // 檢查資料庫檔案是否為舊版資料庫
+            // 檢查資料庫檔案是否正確
             SongDBUpdate_CheckDatabaseFile();
 
             // 初始化所需資料
-            SongMgrDB_CheckDatabaseFile();
             Common_SwitchDBVerErrorUI(Global.SongMgrDBVerErrorUIStatus);
             Task.Factory.StartNew(() => Common_InitializeSongData(true, true, true, true, true, true));
 
@@ -723,7 +708,6 @@ namespace CrazyKTV_SongMgr
                     else if (!File.Exists(Global.CrazyktvSongMgrDatabaseFile)) Tooltip_Label[i].Text = "加歌程式參考資料庫檔案不存在!";
                     else if (Global.CrazyktvDatabaseError) Tooltip_Label[i].Text = "資料庫檔案不是 CrazyKTV 資料庫!";
                     else if (Global.SongMgrDatabaseError) Tooltip_Label[i].Text = "加歌程式參考資料庫不是最新版本!";
-                    else if (Global.CrazyktvDatabaseIsOld) Tooltip_Label[i].Text = "資料庫檔案為舊版本!";
                     else if (!Global.CrazyktvDatabaseMaxDigitCode) Tooltip_Label[i].Text = "歌庫編碼混雜 5 及 6 位數編碼!";
                     else if (!Directory.Exists(Global.SongMgrDestFolder)) Tooltip_Label[i].Text = "請先設定歌庫資料夾!";
                 }
@@ -735,7 +719,6 @@ namespace CrazyKTV_SongMgr
                         "加歌程式參考資料庫檔案不存在!",
                         "資料庫檔案不是 CrazyKTV 資料庫!",
                         "加歌程式參考資料庫不是最新版本!",
-                        "資料庫檔案為舊版本!",
                         "歌庫編碼混雜 5 及 6 位數編碼!",
                         "請先設定歌庫資料夾!",
                         "資料初始化已完成。"
